@@ -50,23 +50,23 @@ class Poster {
           return {
             employeeId, employeeName, account, site,
             date: row.T_Date || row.Date || row.Log_Date,
-            loginTime: row.Log_In || row.Check_In, 
-            logoutTime: row.Log_Out || row.Check_Out, 
+            loginTime: sliceTime(row.Log_In), 
+            logoutTime: sliceTime(row.Log_Out), 
             status: row.Status || row.Employment_Status || row.Current_Status,
-            lateHours: num(row.Late_Hours || row.Late || row.Late_Time), 
-            undertimeHours: num(row.Undertime || row.Undertime_Hours || row.Short_Time),
-            billableHours: num(row.Total_Billable_Hours || row.Billable_Hours || row.Hours_Worked),
+            lateHours: num(row.L || row.Late_Hours || row.Late || row.Late_Time), 
+            undertimeHours: num(row.UT || row.Undertime || row.Undertime_Hours || row.Short_Time),
+            billableHours: num(row.Working_Hrs || row.Total_Billable_Hours || row.Billable_Hours || row.Hours_Worked),
             errorCount: num(row.Error_Checking || row.Errors || row.Flag_Count)
           };
         case 'break-logs':
           return {
             employeeId, employeeName, account,
-            date: getFuzzy('B_Date') || getFuzzy('Date'),
-            breakType: getFuzzy('Break_Type') || getFuzzy('Break_Name') || "Break", 
-            startTime: getFuzzy('Start_Time') || getFuzzy('Break_Start'), 
-            endTime: getFuzzy('End_Time') || getFuzzy('Break_End'),
-            durationHours: parseDuration(getFuzzy('Duration') || getFuzzy('Break_Duration')), 
-            overBreakHours: parseDuration(getFuzzy('Over_Break') || getFuzzy('Excess_Break'))
+            date: row.B_Date || row.Date,
+            breakType: row.Type || row.Break_Type || row.Break_Name || "Break", 
+            startTime: sliceTime(row.Start || row.Start_Time || row.Break_Start), 
+            endTime: sliceTime(row.End || row.End_Time || row.Break_End),
+            durationHours: num(row.Tracked_Time_Hours || row.Duration || row.Break_Duration || row.Duration_Hours), 
+            overBreakHours: num(row.OB || row.Over_Break || row.Over_Break_Hours || row.Excess_Break)
           };
         case 'leaves':
           return {
