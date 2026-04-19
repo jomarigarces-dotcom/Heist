@@ -36,9 +36,8 @@ async function syncAllSectors() {
     for (const report of reports) {
       console.log(`[SYNC] Pulling ${report}...`);
       const records = await zoho.fetchReport(report);
-      await poster.pushToConvex(report, records);
-      count += records.length;
-      console.log(`[OK] Pushed ${records.length} records.`);
+      const result = await poster.pushToConvex(report, records);
+      count += result.count || 0;
     }
 
     // Calculate next sync (Midnight Tomorrow NYC)

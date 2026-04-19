@@ -26,24 +26,14 @@ class Poster {
 
     const url = `${this.convexUrl}/ingest/${reportType}`;
 
-    // DIAGNOSTIC: Print the first raw record to verify field names
-    console.log(`\n[DIAGNOSTIC] First ${reportType} record keys: ${Object.keys(data[0]).join(', ')}`);
-    if (reportType === 'leaves' || reportType === 'break-logs') {
-      console.log(`[DIAGNOSTIC] First ${reportType} sample:`);
-      console.log(JSON.stringify(data[0], null, 2));
-    }
-    console.log(`[DIAGNOSTIC] --------------------------------------------------\n`);
-
     // ── Helpers ──
 
-    // Extract "HH:mm:ss" from Zoho datetime "18 Apr 2026 09:59:17"
+    // Extract "HH:mm:ss" from Zoho datetime "18 Apr 2026 09:59:17" or "02/19/2026 12:16:03"
     const sliceTime = (val) => {
-      if (!val || typeof val !== 'string') return "";
+      if (!val || typeof val !== 'string' || val.trim() === '') return "";
       const trimmed = val.trim();
       const parts = trimmed.split(' ');
-      // Full datetime: "18 Apr 2026 09:59:17" → take the 4th part
-      if (parts.length >= 4) return parts[3];
-      // Already just time: "09:59:17"
+      if (parts.length >= 2) return parts[parts.length - 1]; // last part is always time
       if (trimmed.includes(':')) return trimmed;
       return "";
     };
@@ -57,67 +47,96 @@ class Poster {
 
     // Map Zoho raw API keys to Convex schema keys
     const mappedData = data.map(row => {
-      // Employee ID: Zoho stores it in a dot-notation field
-      const employeeId = row['Employee.Employee_Number'] || row['Employee_Number'] || row['Employee_ID'] || "Unknown";
-      
-      // Employee Name: Zoho lookup fields have .display_value
-      const employeeName = row.Employee?.display_value || row['Employee_Name'] || row['Name'] || "Unknown";
-      
-      // Account: lookup field
-      const account = row.Account?.display_value || row['Account'] || "Unknown";
-      
-      // Site
-      const site = row['Account.Site'] || row['Employee.Site'] || row['Site'] || "Unknown";
 
       switch (reportType) {
+        // ─────────────────────────────────────────────────────────────────────
+        // TIME LOGS — from ece-time-tracker / View_Time_Logs_All1
+        // Keys: Employee.Employee_Number, Employee.display_value, Account.display_value,
+        //        T_Date, Log_In, Log_Out, Status, L, UT, Working_Hrs, Error_Checking, Account.Site
+        // ─────────────────────────────────────────────────────────────────────
         case 'time-logs':
           return {
-            employeeId, employeeName, account, site,
-            date: row.T_Date || row.Date,
+            employeeId: row['Employee.Employee_Number'] || "Unknown",
+            employeeName: row.Employee?.display_value || "Unknown",
+            account: row.Account?.display_value || "Unknown",
+            site: row['Account.Site'] || "Unknown",
+            date: row.T_Date || "",
             loginTime: sliceTime(row.Log_In),
             logoutTime: sliceTime(row.Log_Out),
-            status: row.Status || row.Employment_Status,
+            status: row.Status || "",
             lateHours: num(row.L),
             undertimeHours: num(row.UT),
             billableHours: num(row.Working_Hrs),
             errorCount: num(row.Error_Checking)
           };
 
+        // ─────────────────────────────────────────────────────────────────────
+        // BREAK LOGS — from ece-time-tracker / View_Break_Logs_All
+        // Keys: Employee.Employee_Number, Employee.display_value, Account.display_value,
+        //        B_Date, Type, Start, End, Tracked_Time_Hours, OB
+        // ─────────────────────────────────────────────────────────────────────
         case 'break-logs':
           return {
-            employeeId, employeeName, account,
-            date: row.B_Date || row.Date,
+            employeeId: row['Employee.Employee_Number'] || "Unknown",
+            employeeName: row.Employee?.display_value || "Unknown",
+            account: row.Account?.display_value || "Unknown",
+            date: row.B_Date || "",
             breakType: row.Type || "Break",
             startTime: sliceTime(row.Start),
             endTime: sliceTime(row.End),
-            durationHours: num(row.Tracked_Time_Hours || row.Hours),
+            durationHours: num(row.Tracked_Time_Hours),
             overBreakHours: num(row.OB)
           };
 
+        // ─────────────────────────────────────────────────────────────────────
+        // LEAVES — from ece-attendance-manila / Leaves_For_Approval_All_Statuses
+        // Keys: Employee.Employee_ID, Employee.display_value, Employee.AccountHR,
+        //        A_Date, Leave_Type, Request_Status, Half
+        // NOTE: No "Account" lookup field! Uses Employee.AccountHR instead.
+        //       Status field is "Request_Status" NOT "Status".
+        //       Employee ID is "Employee.Employee_ID" NOT "Employee.Employee_Number".
+        // ─────────────────────────────────────────────────────────────────────
         case 'leaves':
           return {
-            employeeId, employeeName, account,
-            leaveDate: row.A_Date || row.From || row.Date,
-            leaveType: row.Leave_Type || row.Type,
-            status: row.Status || row.ApprovalStatus,
-            dayType: row.Day_Type || row.Leave_Duration
+            employeeId: row['Employee.Employee_ID'] || "Unknown",
+            employeeName: row.Employee?.display_value || "Unknown",
+            account: row['Employee.AccountHR'] || "Unknown",
+            leaveDate: row.A_Date || "",
+            leaveType: row.Leave_Type || "",
+            status: row.Request_Status || "",
+            dayType: row.Half || ""
           };
 
+        // ─────────────────────────────────────────────────────────────────────
+        // OT REQUESTS — from ece-time-tracker / View_OT_Requests
+        // Keys: Employee.Employee_Number, Employee.display_value, Employee.AccountHR,
+        //        O_Date, OT_Hours, Status
+        // NOTE: No "Account" lookup field! Uses Employee.AccountHR instead.
+        // ─────────────────────────────────────────────────────────────────────
         case 'ot-requests':
           return {
-            employeeId, employeeName, account,
-            otDate: row.O_Date || row.Date_of_committed_OT || row.Date,
-            requestedHours: num(row.Requested_Hours || row.OT_Hours),
-            status: row.Status
+            employeeId: row['Employee.Employee_Number'] || "Unknown",
+            employeeName: row.Employee?.display_value || "Unknown",
+            account: row['Employee.AccountHR'] || row.Account?.display_value || "Unknown",
+            otDate: row.O_Date || "",
+            requestedHours: num(row.OT_Hours),
+            status: row.Status || ""
           };
 
+        // ─────────────────────────────────────────────────────────────────────
+        // SCHEDULES — from ece-time-tracker / All_Daily_Schedules_View_Only
+        // Keys: Employee.Employee_Number, Employee.display_value, Account.display_value,
+        //        S_Date, WHPD, Schedule_Start, Schedule_End, Week_Day
+        // NOTE: WHPD = Working Hours Per Day (daily, not weekly)
+        // ─────────────────────────────────────────────────────────────────────
         case 'schedules':
-          const schedDate = row.S_Date || row.Date;
           return {
-            employeeId, employeeName, account,
-            weekStartDate: schedDate,
-            weekEndDate: row.End_Date || schedDate,
-            scheduledHours: num(row.Scheduled_Hours || row.Hours)
+            employeeId: row['Employee.Employee_Number'] || "Unknown",
+            employeeName: row.Employee?.display_value || "Unknown",
+            account: row.Account?.display_value || "Unknown",
+            weekStartDate: row.S_Date || "",
+            weekEndDate: row.S_Date || "",
+            scheduledHours: num(row.WHPD)
           };
 
         default:
@@ -136,10 +155,11 @@ class Poster {
           headers: { 'Content-Type': 'application/json' }
         });
       }
-      return { success: true, count: data.length, message: "Batch successful" };
+      console.log(`[OK] Pushed ${data.length} ${reportType} records.`);
+      return { success: true, count: data.length };
     } catch (err) {
       const serverMessage = err.response?.data?.error || err.message;
-      throw new Error(`Convex POST Error: ${serverMessage}`);
+      throw new Error(`Convex POST Error (${reportType}): ${serverMessage}`);
     }
   }
 }
