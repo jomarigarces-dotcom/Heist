@@ -13,16 +13,37 @@ class Poster {
     // Convex automatically configured endpoints from WF Heist http router
     const url = `${this.convexUrl}/ingest/${reportType}`;
     
+    // DIAGNOSTIC PROBE: Print the first raw record from Zoho to find the 'parts'
+    console.log(`\n[DIAGNOSTIC] First ${reportType} record structure from Zoho:`);
+    console.log(JSON.stringify(data[0], null, 2));
+    console.log(`[DIAGNOSTIC] --------------------------------------------------\n`);
+
     // Map Zoho raw API keys to Convex schema keys
     const mappedData = data.map(row => {
-      // Safely extract nested Zoho lookups / dot-notation fields
-      const employeeId = row['Employee.Employee_Number'] || row['Employee_ID'] || row.Employee?.Employee_Number || row.Employee_Number || row.Agent_ID || "Unknown";
-      const employeeName = row.Employee?.display_value || row.Employee || row.Employee_Name || row.Name || row.Agent_Name || "Unknown";
-      const account = row.Account?.display_value || row.Account || row.LOB?.display_value || "Unknown";
-      const site = row['Account.Site'] || row.Site || "Unknown";
+      // Helper: Fuzzy find Zoho keys (case-insensitive, ignores underscores)
+      const getFuzzy = (target) => {
+        const normalizedTarget = target.toLowerCase().replace(/_/g, '');
+        const actualKey = Object.keys(row).find(k => k.toLowerCase().replace(/_/g, '') === normalizedTarget);
+        return actualKey ? row[actualKey] : undefined;
+      };
 
-      // Parse float safely
+      // Helper: Parse Zoho Duration string (HH:mm:ss or mm:ss) to decimal hours
+      const parseDuration = (val) => {
+        if (!val) return 0;
+        if (typeof val === 'number') return val;
+        const parts = String(val).split(':').map(Number);
+        if (parts.length === 3) return parts[0] + parts[1]/60 + parts[2]/3600;
+        if (parts.length === 2) return parts[0]/60 + parts[1]/3600;
+        return parseFloat(val) || 0;
+      };
+
+      // Handle simple numeric conversions
       const num = (val) => val ? parseFloat(val) : 0;
+
+      const employeeId = getFuzzy('Employee_Number') || getFuzzy('Employee_ID') || row['Employee.Employee_Number'] || "Unknown";
+      const employeeName = row.Employee?.display_value || getFuzzy('Employee_Name') || getFuzzy('Name') || "Unknown";
+      const account = row.Account?.display_value || getFuzzy('Account') || getFuzzy('LOB') || "Unknown";
+      const site = getFuzzy('Site') || "Unknown";
 
       switch(reportType) {
         case 'time-logs':
@@ -40,12 +61,12 @@ class Poster {
         case 'break-logs':
           return {
             employeeId, employeeName, account,
-            date: row.B_Date || row.Date,
-            breakType: row.Break_Type || row.Break_Type1 || row.Break_Name || row.Type, 
-            startTime: row.Start_Time || row.Start_Break || row.Break_Start, 
-            endTime: row.End_Time || row.End_Break || row.Break_End,
-            durationHours: num(row.Duration || row.Break_Duration || row.Duration_Hours), 
-            overBreakHours: num(row.Over_Break || row.Over_Break_Hours || row.Excess_Break)
+            date: getFuzzy('B_Date') || getFuzzy('Date'),
+            breakType: getFuzzy('Break_Type') || getFuzzy('Break_Name') || "Break", 
+            startTime: getFuzzy('Start_Time') || getFuzzy('Break_Start'), 
+            endTime: getFuzzy('End_Time') || getFuzzy('Break_End'),
+            durationHours: parseDuration(getFuzzy('Duration') || getFuzzy('Break_Duration')), 
+            overBreakHours: parseDuration(getFuzzy('Over_Break') || getFuzzy('Excess_Break'))
           };
         case 'leaves':
           return {
