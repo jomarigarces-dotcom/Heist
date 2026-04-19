@@ -1,31 +1,34 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 
-// ─── Get all exceptions, optionally filtered by account and/or status ─────────
+// ─── Get all exceptions, optionally filtered (paginated) ─────────────────────
 export const listExceptions = query({
   args: {
     account: v.optional(v.string()),
     status: v.optional(v.string()),
+    page: v.optional(v.number()),
   },
-  handler: async (ctx, { account, status }) => {
-    let q = ctx.db.query("exceptions");
+  handler: async (ctx, { account, status, page }) => {
+    let rows = await ctx.db.query("exceptions").collect();
 
-    // Filter by account if provided
     if (account && account !== "ALL") {
-      const rows = await q
-        .withIndex("by_account", (idx) => idx.eq("account", account))
-        .collect();
-      if (status && status !== "ALL") {
-        return rows.filter((r) => r.status === status);
-      }
-      return rows;
+      rows = rows.filter((r) => r.account === account);
+    }
+    if (status && status !== "ALL") {
+      rows = rows.filter((r) => r.status === status);
     }
 
-    const rows = await q.collect();
-    if (status && status !== "ALL") {
-      return rows.filter((r) => r.status === status);
-    }
-    return rows;
+    const PAGE_SIZE = 100;
+    const currentPage = page ?? 1;
+    const totalCount = rows.length;
+    const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return {
+      rows: rows.slice(start, start + PAGE_SIZE),
+      totalCount,
+      totalPages,
+      currentPage,
+    };
   },
 });
 
@@ -39,13 +42,14 @@ export const listAccounts = query({
   },
 });
 
-// ─── Get raw time logs ────────────────────────────────────────────────────────
+// ─── Get raw time logs (paginated) ────────────────────────────────────────────
 export const listTimeLogs = query({
   args: {
     account: v.optional(v.string()),
     date: v.optional(v.string()),
+    page: v.optional(v.number()),
   },
-  handler: async (ctx, { account, date }) => {
+  handler: async (ctx, { account, date, page }) => {
     let rows = await ctx.db.query("timeLogs").collect();
     if (account && account !== "ALL") {
       rows = rows.filter((r) => r.account === account);
@@ -53,17 +57,28 @@ export const listTimeLogs = query({
     if (date) {
       rows = rows.filter((r) => r.date === date);
     }
-    return rows;
+    const PAGE_SIZE = 100;
+    const currentPage = page ?? 1;
+    const totalCount = rows.length;
+    const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return {
+      rows: rows.slice(start, start + PAGE_SIZE),
+      totalCount,
+      totalPages,
+      currentPage,
+    };
   },
 });
 
-// ─── Get raw break logs ───────────────────────────────────────────────────────
+// ─── Get raw break logs (paginated) ───────────────────────────────────────────
 export const listBreakLogs = query({
   args: {
     account: v.optional(v.string()),
     date: v.optional(v.string()),
+    page: v.optional(v.number()),
   },
-  handler: async (ctx, { account, date }) => {
+  handler: async (ctx, { account, date, page }) => {
     let rows = await ctx.db.query("breakLogs").collect();
     if (account && account !== "ALL") {
       rows = rows.filter((r) => r.account === account);
@@ -71,21 +86,42 @@ export const listBreakLogs = query({
     if (date) {
       rows = rows.filter((r) => r.date === date);
     }
-    return rows;
+    const PAGE_SIZE = 100;
+    const currentPage = page ?? 1;
+    const totalCount = rows.length;
+    const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return {
+      rows: rows.slice(start, start + PAGE_SIZE),
+      totalCount,
+      totalPages,
+      currentPage,
+    };
   },
 });
 
-// ─── Get raw leaves ───────────────────────────────────────────────────────────
+// ─── Get raw leaves (paginated) ───────────────────────────────────────────────
 export const listLeaves = query({
   args: {
     account: v.optional(v.string()),
+    page: v.optional(v.number()),
   },
-  handler: async (ctx, { account }) => {
+  handler: async (ctx, { account, page }) => {
     let rows = await ctx.db.query("leaves").collect();
     if (account && account !== "ALL") {
       rows = rows.filter((r) => r.account === account);
     }
-    return rows;
+    const PAGE_SIZE = 100;
+    const currentPage = page ?? 1;
+    const totalCount = rows.length;
+    const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return {
+      rows: rows.slice(start, start + PAGE_SIZE),
+      totalCount,
+      totalPages,
+      currentPage,
+    };
   },
 });
 

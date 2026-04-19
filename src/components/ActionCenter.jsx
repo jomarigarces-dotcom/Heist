@@ -1,24 +1,29 @@
+import { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
+import Pagination from "./Pagination";
 
 export default function ActionCenter({ account, status, ruleFilter }) {
-  const exceptions = useQuery(api.queries.listExceptions, {
+  const [page, setPage] = useState(1);
+  const data = useQuery(api.queries.listExceptions, {
     account: account || "ALL",
     status: status || "OPEN",
+    page,
   });
   const resolve = useMutation(api.queries.resolveException);
 
-  if (!exceptions) return <div className="loading-state">Loading actions...</div>;
+  if (!data) return <div className="loading-state">Loading actions...</div>;
 
-  // Apply rule filter if a metric card was clicked
-  let filtered = exceptions;
+  let { rows: exceptions, totalCount, totalPages, currentPage } = data;
+
+  // Apply rule filter client-side if a metric card was clicked
   if (ruleFilter && ruleFilter.length > 0) {
-    filtered = exceptions.filter((e) =>
+    exceptions = exceptions.filter((e) =>
       ruleFilter.some((r) => e.ruleCode.startsWith(r))
     );
   }
 
-  if (filtered.length === 0) {
+  if (exceptions.length === 0) {
     return (
       <div className="table-card">
         <div className="table-header">
@@ -39,7 +44,7 @@ export default function ActionCenter({ account, status, ruleFilter }) {
 
   // Group by account for the "Overview" count
   const byAccount = {};
-  for (const e of filtered) {
+  for (const e of exceptions) {
     const acc = e.account || "Unassigned";
     if (!byAccount[acc]) byAccount[acc] = { total: 0, high: 0 };
     byAccount[acc].total++;
@@ -85,7 +90,7 @@ export default function ActionCenter({ account, status, ruleFilter }) {
       {/* Detailed Table */}
       <div className="table-card">
         <div className="table-header">
-          <h3>Needs Action — {filtered.length} item{filtered.length !== 1 ? "s" : ""}</h3>
+          <h3>Needs Action — {exceptions.length} item{exceptions.length !== 1 ? "s" : ""}</h3>
         </div>
         <div className="table-wrapper">
           <table>
@@ -101,7 +106,7 @@ export default function ActionCenter({ account, status, ruleFilter }) {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((e) => (
+              {exceptions.map((e) => (
                 <tr key={e._id}>
                   <td style={{ fontWeight: 500, color: "var(--text-primary)" }}>
                     {e.employeeName}
@@ -147,6 +152,14 @@ export default function ActionCenter({ account, status, ruleFilter }) {
             </tbody>
           </table>
         </div>
+        {!ruleFilter && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalCount={totalCount}
+            onPageChange={setPage}
+          />
+        )}
       </div>
     </div>
   );

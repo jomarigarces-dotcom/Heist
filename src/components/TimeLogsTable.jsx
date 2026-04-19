@@ -1,15 +1,21 @@
+import { useState } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
+import Pagination from "./Pagination";
 
 export default function TimeLogsTable({ account, date }) {
-  const logs = useQuery(api.queries.listTimeLogs, {
+  const [page, setPage] = useState(1);
+  const data = useQuery(api.queries.listTimeLogs, {
     account: account || "ALL",
     date,
+    page,
   });
 
-  if (!logs) return <div className="loading-state">Loading time logs...</div>;
+  if (!data) return <div className="loading-state">Loading time logs...</div>;
 
-  if (logs.length === 0) {
+  const { rows: logs, totalCount, totalPages, currentPage } = data;
+
+  if (totalCount === 0) {
     return (
       <div className="table-card">
         <div className="table-header"><h3>Time Logs</h3></div>
@@ -25,7 +31,7 @@ export default function TimeLogsTable({ account, date }) {
   return (
     <div className="table-card">
       <div className="table-header">
-        <h3>Time Logs — {logs.length} records</h3>
+        <h3>Time Logs — {totalCount.toLocaleString()} records</h3>
       </div>
       <div className="table-wrapper">
         <table>
@@ -72,6 +78,12 @@ export default function TimeLogsTable({ account, date }) {
           </tbody>
         </table>
       </div>
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        totalCount={totalCount}
+        onPageChange={setPage}
+      />
     </div>
   );
 }
