@@ -8,10 +8,10 @@ import LeavesTable from "./components/LeavesTable";
 import "./index.css";
 
 const NAV_ITEMS = [
-  { id: "action", label: "Action Center", icon: "🚨", section: "AUDIT" },
-  { id: "timelogs", label: "Time Logs", icon: "⏰", section: "RAW DATA" },
-  { id: "breaklogs", label: "Break Logs", icon: "☕", section: "RAW DATA" },
-  { id: "leaves", label: "Leaves", icon: "🌿", section: "RAW DATA" },
+  { id: "action", label: "ACTION-CENTER", icon: "ALRT", section: "AUDIT" },
+  { id: "timelogs", label: "DATA-TIME", icon: "TLOG", section: "RAW DATA" },
+  { id: "breaklogs", label: "DATA-BREAK", icon: "BLOG", section: "RAW DATA" },
+  { id: "leaves", label: "DATA-LEAVES", icon: "LEVE", section: "RAW DATA" },
 ];
 
 export default function App() {
@@ -37,6 +37,14 @@ export default function App() {
 
   return (
     <div className="app-layout">
+      {/* ── Project Tactical: Radar Background ── */}
+      <div className="radar-background">
+        <div className="sonar-ring" />
+        <div className="sonar-ring" />
+        <div className="sonar-ring" />
+        <div className="radar-grid" />
+      </div>
+
       {/* ── Top Navigation ── */}
       <nav className="top-nav">
         <div className="nav-links">
@@ -46,7 +54,7 @@ export default function App() {
               className={`nav-btn ${activeTab === item.id ? "active" : ""}`}
               onClick={() => setActiveTab(item.id)}
             >
-              <span>{item.icon}</span>
+              <span style={{ fontSize: '0.6rem', opacity: 0.5, marginRight: '4px' }}>[{item.icon}]</span>
               {item.label}
               {item.id === "action" && openHighCount > 0 && (
                 <span className="nav-badge">{openHighCount}</span>
@@ -57,7 +65,7 @@ export default function App() {
         
         <div className="live-status">
           <span className="live-dot" />
-          Real-time Sync Active
+          RADAR ACTIVE // {new Date().toLocaleTimeString()}
         </div>
       </nav>
 
@@ -68,8 +76,8 @@ export default function App() {
           {/* Header Box */}
           <header className="header-box">
             <div className="header-text">
-              <h1>HEIST // {pageTitle.label}</h1>
-              <p>{pageTitle.sub}</p>
+              <h1>HEIST COMMAND // {pageTitle.label.toUpperCase()}</h1>
+              <p>{pageTitle.sub.toUpperCase()}</p>
             </div>
           </header>
 
@@ -131,23 +139,23 @@ export default function App() {
             <div className="stats-grid">
               <div className="stat-card high">
                 <div className="stat-value">{stats?.highSeverity ?? "—"}</div>
-                <div className="stat-label">🔴 High Severity</div>
-                <div className="stat-sub">Critical violations</div>
+                <div className="stat-label">HIGH-SEVERITY-ANOMALIES</div>
+                <div className="stat-sub">CRITICAL VIOLATIONS DETECTED</div>
               </div>
               <div className="stat-card medium">
                 <div className="stat-value">{stats?.mediumSeverity ?? "—"}</div>
-                <div className="stat-label">🟡 Medium Severity</div>
-                <div className="stat-sub">Needs verification</div>
+                <div className="stat-label">MODERATE-ANOMALIES</div>
+                <div className="stat-sub">VERIFICATION REQUIRED</div>
               </div>
               <div className="stat-card neutral">
                 <div className="stat-value">{stats?.totalExceptions ?? "—"}</div>
-                <div className="stat-label">📋 Total Open</div>
-                <div className="stat-sub">Unresolved exceptions</div>
+                <div className="stat-label">ACTIVE-TASKS</div>
+                <div className="stat-sub">UNRESOLVED QUEUE</div>
               </div>
               <div className="stat-card resolved">
                 <div className="stat-value">{stats?.resolved ?? "—"}</div>
-                <div className="stat-label">✓ Resolved</div>
-                <div className="stat-sub">Cleared by QC</div>
+                <div className="stat-label">UNIT-STABLE</div>
+                <div className="stat-sub">CLEARED BY CONTROL</div>
               </div>
             </div>
           )}

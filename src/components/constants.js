@@ -1,35 +1,35 @@
-// Rule codes → human-readable labels
+// Rule codes → tactical descriptors
 export const RULE_LABELS = {
-  STEP_2_1_PENDING_OT: "Pending OT Request",
-  STEP_2_1_PENDING_LEAVE: "Pending/Retraction Leave",
-  STEP_3_1_ERROR_COUNT: "Zoho Error Flag",
-  STEP_3_1_MISSING_LOGOUT: "Missing Logout",
-  STEP_3_1_MISSING_STATUS: "Missing Status",
-  STEP_3_1_MISSING_ACCOUNT: "Missing Account",
-  STEP_3_2_LATE_MINOR: "Late (Minor)",
-  STEP_3_3_LATE_CRITICAL: "Late ≥ 4h (Critical)",
-  STEP_3_4_UNDERTIME_CRITICAL: "Undertime ≥ 4h",
-  STEP_3_5_HALF_DAY_LEAVE: "Half-Day Leave Check",
-  STEP_3_6_LEAVE_BUT_PRESENT: "Full-Day Leave + Present",
-  STEP_3_9_SCHEDULE_NOT_40H: "Schedule ≠ 40h/week",
-  STEP_4_1_BREAK_NO_END: "Open Break (No End)",
-  STEP_4_2_CLINIC_OVERTIME: "Clinic > 2h",
-  STEP_4_3_OVERBREAK: "Overbreak ≥ 0.8h",
-  STEP_4_5_CLINIC_LUNCH_OVERLAP: "Clinic/Lunch Overlap",
+  STEP_2_1_PENDING_OT: "ANOMALY-OT-PENDING",
+  STEP_2_1_PENDING_LEAVE: "ANOMALY-LEAVE-PENDING",
+  STEP_3_1_ERROR_COUNT: "SYS-FLAG-ZOHO-ERR",
+  STEP_3_1_MISSING_LOGOUT: "LOG-FAIL-MISSING-OUT",
+  STEP_3_1_MISSING_STATUS: "DATA-NULL-STATUS",
+  STEP_3_1_MISSING_ACCOUNT: "DATA-NULL-ACCOUNT",
+  STEP_3_2_LATE_MINOR: "ANOMALY-LATE-MINOR",
+  STEP_3_3_LATE_CRITICAL: "ANOMALY-LATE-CRITICAL",
+  STEP_3_4_UNDERTIME_CRITICAL: "ANOMALY-UNDERTIME-CRITICAL",
+  STEP_3_5_HALF_DAY_LEAVE: "AUDIT-LEAVE-HALFDAY",
+  STEP_3_6_LEAVE_BUT_PRESENT: "AUDIT-CONFLICT-PRESENT",
+  STEP_3_9_SCHEDULE_NOT_40H: "RESOURCE-SCHED-ANOMALY",
+  STEP_4_1_BREAK_NO_END: "LOG-FAIL-OPEN-BREAK",
+  STEP_4_2_CLINIC_OVERTIME: "AUDIT-CLINIC-DURATION",
+  STEP_4_3_OVERBREAK: "AUDIT-OVERBREAK-LIMIT",
+  STEP_4_5_CLINIC_LUNCH_OVERLAP: "AUDIT-BREAK-OVERLAP",
 };
 
 export const SEVERITY_ICONS = {
-  HIGH: "🔴",
-  MEDIUM: "🟡",
-  LOW: "🟢",
+  HIGH: "[H]",
+  MEDIUM: "[M]",
+  LOW: "[L]",
 };
 
 export function formatDate(dateStr) {
-  if (!dateStr) return "—";
+  if (!dateStr) return "N/A";
   const d = new Date(dateStr + "T00:00:00");
   return d.toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",
-  });
+  }).toUpperCase();
 }

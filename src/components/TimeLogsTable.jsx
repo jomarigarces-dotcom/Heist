@@ -8,7 +8,7 @@ export default function TimeLogsTable({ account, date }) {
     return (
       <div className="loading-center">
         <div className="spinner" />
-        Loading time logs…
+        DECRYPTING LOGS...
       </div>
     );
   }
@@ -16,51 +16,51 @@ export default function TimeLogsTable({ account, date }) {
   return (
     <div className="table-wrapper animate-in">
       <div className="table-header">
-        <span className="table-title">⏰ Time Logs</span>
-        <span className="table-count">{logs.length} records</span>
+        <span className="table-title">DATA-TIME // ATTENDANCE_RECORDS</span>
+        <span className="table-count">{logs.length} ENTRIES</span>
       </div>
       {logs.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-state-icon">📋</div>
-          <div className="empty-state-title">No Time Logs</div>
-          <div className="empty-state-sub">Ingest data via AppScript to populate this table.</div>
+          <div className="empty-state-icon" style={{ opacity: 0.2 }}>[!]</div>
+          <div className="empty-state-title">DATA-STREAM-EMPTY</div>
+          <div className="empty-state-sub">NO LOGS FOUND FOR SELECTED TARGETS.</div>
         </div>
       ) : (
         <div style={{ overflowX: "auto" }}>
           <table>
             <thead>
               <tr>
-                <th>Employee</th>
-                <th>Date</th>
-                <th>Account</th>
-                <th>Login</th>
-                <th>Logout</th>
-                <th>Status</th>
-                <th>Late (h)</th>
-                <th>Undertime (h)</th>
-                <th>Billable (h)</th>
-                <th>Errors</th>
+                <th>UNIT_NAME</th>
+                <th>PERIOD</th>
+                <th>SECTOR</th>
+                <th>IN</th>
+                <th>OUT</th>
+                <th>STATE</th>
+                <th>LATE</th>
+                <th>UNDR</th>
+                <th>BILL</th>
+                <th>ERR</th>
               </tr>
             </thead>
             <tbody>
               {logs.map((log) => (
                 <tr key={log._id}>
-                  <td style={{ color: "var(--text-primary)", fontWeight: 500 }}>
+                  <td style={{ color: "#fff", fontWeight: 700, textTransform: 'uppercase' }}>
                     {log.employeeName}
                   </td>
                   <td className="mono">{log.date}</td>
                   <td>
                     {log.account ? (
-                      <span className="tag tag-account">{log.account}</span>
+                      <span className="tag tag-account">{log.account.toUpperCase()}</span>
                     ) : (
-                      <span style={{ color: "var(--high)", fontStyle: "italic" }}>—</span>
+                      <span className="highlight-bad">MISSING</span>
                     )}
                   </td>
-                  <td className="mono">{log.loginTime || "—"}</td>
+                  <td className="mono" style={{ color: 'var(--accent-cyan)' }}>{log.loginTime || "—"}</td>
                   <td className={`mono${!log.logoutTime ? " highlight-bad" : ""}`}>
-                    {log.logoutTime || "MISSING"}
+                    {log.logoutTime || "OPEN"}
                   </td>
-                  <td>{log.status || "—"}</td>
+                  <td style={{ fontSize: '0.7rem' }}>{log.status?.toUpperCase() || "—"}</td>
                   <td className={
                     (log.lateHours ?? 0) >= 4
                       ? "highlight-bad mono"

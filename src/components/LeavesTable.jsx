@@ -9,7 +9,7 @@ export default function LeavesTable({ account }) {
     return (
       <div className="loading-center">
         <div className="spinner" />
-        Loading leaves…
+        RETRIEVING OFF-DUTY REGISTRY...
       </div>
     );
   }
@@ -17,26 +17,26 @@ export default function LeavesTable({ account }) {
   return (
     <div className="table-wrapper animate-in">
       <div className="table-header">
-        <span className="table-title">🌿 Leaves</span>
-        <span className="table-count">{leaves.length} records</span>
+        <span className="table-title">DATA-LEAVES // ABSENCE_REGISTRY</span>
+        <span className="table-count">{leaves.length} ENTRIES</span>
       </div>
       {leaves.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-state-icon">🌿</div>
-          <div className="empty-state-title">No Leave Records</div>
-          <div className="empty-state-sub">Ingest data via AppScript to populate this table.</div>
+          <div className="empty-state-icon" style={{ opacity: 0.2 }}>[0]</div>
+          <div className="empty-state-title">REGISTRY-STREAM-CLEAR</div>
+          <div className="empty-state-sub">NO ACTIVE LEAVE RECORDS DETECTED.</div>
         </div>
       ) : (
         <div style={{ overflowX: "auto" }}>
           <table>
             <thead>
               <tr>
-                <th>Employee</th>
-                <th>Date</th>
-                <th>Account</th>
-                <th>Leave Type</th>
-                <th>Day Type</th>
-                <th>Status</th>
+                <th>UNIT_NAME</th>
+                <th>PERIOD</th>
+                <th>SECTOR</th>
+                <th>LV_TYPE</th>
+                <th>DAY_TYPE</th>
+                <th>CMD_STATUS</th>
               </tr>
             </thead>
             <tbody>
@@ -46,19 +46,23 @@ export default function LeavesTable({ account }) {
                   (lv.status ?? "").toLowerCase().includes("retraction");
                 return (
                   <tr key={lv._id}>
-                    <td style={{ color: "var(--text-primary)", fontWeight: 500 }}>
+                    <td style={{ color: "#fff", fontWeight: 700, textTransform: 'uppercase' }}>
                       {lv.employeeName}
                     </td>
                     <td className="mono">{lv.leaveDate}</td>
                     <td>
                       {lv.account ? (
-                        <span className="tag tag-account">{lv.account}</span>
+                        <span className="tag tag-account">{lv.account.toUpperCase()}</span>
                       ) : "—"}
                     </td>
-                    <td>{lv.leaveType || "—"}</td>
-                    <td>{lv.dayType || "—"}</td>
-                    <td className={isPending ? "highlight-warn" : "highlight-ok"}>
-                      {lv.status || "—"}
+                    <td>
+                      <span className="exception-rule" style={{ color: 'var(--accent-cyan)', border: 'none', background: 'transparent' }}>
+                        {lv.leaveType?.toUpperCase() || "—"}
+                      </span>
+                    </td>
+                    <td style={{ fontSize: '0.7rem' }}>{lv.dayType?.toUpperCase() || "—"}</td>
+                    <td className={isPending ? "highlight-bad mono" : "highlight-ok mono"} style={{ fontWeight: 700 }}>
+                      {lv.status?.toUpperCase() || "—"}
                     </td>
                   </tr>
                 );

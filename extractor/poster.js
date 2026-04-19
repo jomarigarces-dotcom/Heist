@@ -28,30 +28,39 @@ class Poster {
         case 'time-logs':
           return {
             employeeId, employeeName, account, site,
-            date: row.T_Date || row.Date,
-            loginTime: row.Log_In, logoutTime: row.Log_Out, status: row.Status || row.Employment_Status,
-            lateHours: num(row.Late_Hours), undertimeHours: num(row.Undertime),
-            billableHours: num(row.Total_Billable_Hours || row.Billable_Hours),
-            errorCount: num(row.Error_Checking)
+            date: row.T_Date || row.Date || row.Log_Date,
+            loginTime: row.Log_In || row.Check_In, 
+            logoutTime: row.Log_Out || row.Check_Out, 
+            status: row.Status || row.Employment_Status || row.Current_Status,
+            lateHours: num(row.Late_Hours || row.Late || row.Late_Time), 
+            undertimeHours: num(row.Undertime || row.Undertime_Hours || row.Short_Time),
+            billableHours: num(row.Total_Billable_Hours || row.Billable_Hours || row.Hours_Worked),
+            errorCount: num(row.Error_Checking || row.Errors || row.Flag_Count)
           };
         case 'break-logs':
           return {
             employeeId, employeeName, account,
             date: row.B_Date || row.Date,
-            breakType: row.Break_Type, startTime: row.Start_Time, endTime: row.End_Time,
-            durationHours: num(row.Duration), overBreakHours: num(row.Over_Break)
+            breakType: row.Break_Type || row.Break_Type1 || row.Break_Name || row.Type, 
+            startTime: row.Start_Time || row.Start_Break || row.Break_Start, 
+            endTime: row.End_Time || row.End_Break || row.Break_End,
+            durationHours: num(row.Duration || row.Break_Duration || row.Duration_Hours), 
+            overBreakHours: num(row.Over_Break || row.Over_Break_Hours || row.Excess_Break)
           };
         case 'leaves':
           return {
             employeeId, employeeName, account,
-            leaveDate: row.A_Date || row.Date,
-            leaveType: row.Leave_Type, status: row.Status, dayType: row.Day_Type
+            leaveDate: row.A_Date || row.Date || row.From || row.Leave_Date,
+            leaveType: row.Leave_Type || row.Type_of_Leave || row.Category, 
+            status: row.Status || row.Approval_Status, 
+            dayType: row.Day_Type || row.Leave_Duration || row.Absence_Duration
           };
         case 'ot-requests':
           return {
             employeeId, employeeName, account,
-            otDate: row.O_Date || row.Date_of_committed_OT || row.Date,
-            requestedHours: num(row.Requested_Hours), status: row.Status
+            otDate: row.O_Date || row.Date_of_committed_OT || row.Date || row.OT_Date,
+            requestedHours: num(row.Requested_Hours || row.OT_Hours || row.Duration), 
+            status: row.Status || row.Approval_Status
           };
         case 'schedules':
           const schedDate = row.S_Date || row.Start_Date || row.Date;

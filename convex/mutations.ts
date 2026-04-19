@@ -25,7 +25,14 @@ export const bulkInsertTimeLogs = internalMutation({
   },
   handler: async (ctx, { batchId, records }) => {
     for (const r of records) {
-      await ctx.db.insert("timeLogs", { ...r, batchId });
+      await ctx.db.insert("timeLogs", { 
+        ...r, 
+        batchId,
+        lateHours: r.lateHours ?? 0,
+        undertimeHours: r.undertimeHours ?? 0,
+        billableHours: r.billableHours ?? 0,
+        errorCount: r.errorCount ?? 0
+      });
     }
   },
 });
@@ -50,7 +57,12 @@ export const bulkInsertBreakLogs = internalMutation({
   },
   handler: async (ctx, { batchId, records }) => {
     for (const r of records) {
-      await ctx.db.insert("breakLogs", { ...r, batchId });
+      await ctx.db.insert("breakLogs", { 
+        ...r, 
+        batchId,
+        durationHours: r.durationHours ?? 0,
+        overBreakHours: r.overBreakHours ?? 0
+      });
     }
   },
 });
@@ -395,9 +407,10 @@ export const runAnalyzer = internalMutation({
         (b.breakType ?? "").toLowerCase().includes("lunch")
       );
       if (clinic && lunch && clinic.startTime && lunch.startTime) {
-        const parseHHMM = (t: string): number => {
+        const parseHHMM = (t?: string): number => {
+          if (!t || !t.includes(":")) return 0;
           const [h, m] = t.split(":").map(Number);
-          return h * 60 + (m || 0);
+          return (h || 0) * 60 + (m || 0);
         };
         const cStart = parseHHMM(clinic.startTime);
         const cEnd = clinic.endTime ? parseHHMM(clinic.endTime) : cStart + 60;

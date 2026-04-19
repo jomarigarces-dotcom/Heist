@@ -14,7 +14,7 @@ export default function ActionCenter({ account, status }) {
     return (
       <div className="loading-center">
         <div className="spinner" />
-        Running analyzer…
+        ANALYZING SECTOR DATA...
       </div>
     );
   }
@@ -22,12 +22,12 @@ export default function ActionCenter({ account, status }) {
   if (exceptions.length === 0) {
     return (
       <div className="empty-state animate-in">
-        <div className="empty-state-icon">✅</div>
-        <div className="empty-state-title">No Exceptions Found</div>
+        <div className="empty-state-icon" style={{ opacity: 0.2 }}>[0]</div>
+        <div className="empty-state-title">ALL SYSTEMS STABLE</div>
         <div className="empty-state-sub">
           {account && account !== "ALL"
-            ? `Account "${account}" is clean.`
-            : "All accounts are clean. Ingest data from AppScript to run analysis."}
+            ? `Sector "${account}" reports no anomalies.`
+            : "No workforce anomalies detected in current cycle."}
         </div>
       </div>
     );
@@ -45,39 +45,39 @@ export default function ActionCenter({ account, status }) {
     <div className="exceptions-list animate-in">
       {Object.entries(grouped).map(([grpAccount, items]) => (
         <div key={grpAccount}>
-          <div className="group-header" style={{ marginTop: "4px" }}>
-            <span className="group-header-name">{grpAccount}</span>
-            <span className="group-header-count">{items.length} flag{items.length !== 1 ? "s" : ""}</span>
+          <div className="group-header">
+            <span className="group-header-name">SECTOR // {grpAccount.toUpperCase()}</span>
+            <span className="group-header-count">{items.length} ANOMALIES</span>
           </div>
           {items.map((ex) => {
             const isResolved =
               ex.status === "RESOLVED" || ex.status === "ACKNOWLEDGED";
             const label = RULE_LABELS[ex.ruleCode] ?? ex.ruleCode;
+            
             return (
               <div
                 key={ex._id}
-                className={`exception-card${isResolved ? " resolved" : ""}`}
-                style={{ marginBottom: "8px" }}
+                className={`exception-card ${ex.severity}${isResolved ? " resolved" : ""}`}
               >
                 <div style={{ display: "flex", flexDirection: "column", gap: "4px", alignItems: "flex-start", flexShrink: 0 }}>
                   <span className={`severity-pill ${isResolved ? ex.status : ex.severity}`}>
                     {isResolved
-                      ? ex.status === "RESOLVED" ? "✓ Resolved" : "~ Acknowledged"
-                      : `${SEVERITY_ICONS[ex.severity]} ${ex.severity}`}
+                      ? ex.status === "RESOLVED" ? "SYS_OK" : "SYS_ACK"
+                      : `[!] ${ex.severity}`}
                   </span>
                 </div>
 
                 <div className="exception-body">
                   <div className="exception-employee">{ex.employeeName}</div>
                   <div className="exception-meta">
-                    <span className="exception-meta-item">
-                      📅 {formatDate(ex.date)}
+                    <span className="exception-meta-item mono">
+                      PERIOD: {ex.date}
                     </span>
                     <span className="exception-rule">{label}</span>
                   </div>
                   <div className="exception-description">{ex.description}</div>
                   {ex.rawValue && (
-                    <div className="exception-raw">Value: {ex.rawValue}</div>
+                    <div className="exception-raw">HEX_VAL: {ex.rawValue}</div>
                   )}
                 </div>
 
@@ -88,14 +88,14 @@ export default function ActionCenter({ account, status }) {
                       className="btn btn-resolve btn-sm"
                       onClick={() => handleAction(ex._id, "RESOLVED")}
                     >
-                      ✓ Resolve
+                      FIX_SYS
                     </button>
                     <button
                       id={`ack-${ex._id}`}
                       className="btn btn-ack btn-sm"
                       onClick={() => handleAction(ex._id, "ACKNOWLEDGED")}
                     >
-                      ~ Acknowledge
+                      ACK_ALRT
                     </button>
                   </div>
                 )}
