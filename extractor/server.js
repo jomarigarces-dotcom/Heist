@@ -1,7 +1,6 @@
 require('dotenv').config();
 const express = require('express');
 const path = require('path');
-const open = require('open');
 const Zoho = require('./zoho');
 const Poster = require('./poster');
 
@@ -72,8 +71,5 @@ app.post('/extract/:type', async (req, res) => {
 // Start Server
 app.listen(PORT, () => {
   console.log(`🚀 Heist Extractor Control Panel running on http://localhost:${PORT}`);
-  // Attempt to auto-open browser if not run explicitly in background
-  if (process.stdout.isTTY) {
-     open(`http://localhost:${PORT}`).catch(() => {});
-  }
+  console.log(`👉 Please open exactly http://localhost:${PORT} in your web browser.`);
 });

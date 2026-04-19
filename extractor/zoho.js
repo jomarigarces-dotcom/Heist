@@ -108,6 +108,12 @@ class Zoho {
       const start = new Date(new Date().setDate(now.getDate() + diffToMonday));
       const end = new Date(new Date(start).setDate(start.getDate() + 13));
       criteria = `(S_Date >= "${formatter(start)}" && S_Date <= "${formatter(end)}")`;
+    } else if (reportType === 'leaves') {
+      const twoMonthsAgo = new Date(now); twoMonthsAgo.setMonth(now.getMonth() - 2);
+      criteria = `(A_Date >= "${formatter(twoMonthsAgo)}")`;
+    } else if (reportType === 'ot-requests') {
+      const twoMonthsAgo = new Date(now); twoMonthsAgo.setMonth(now.getMonth() - 2);
+      criteria = `(O_Date >= "${formatter(twoMonthsAgo)}")`;
     }
 
     const token = await this.getValidToken();
