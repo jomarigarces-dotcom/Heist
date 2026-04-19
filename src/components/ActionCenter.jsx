@@ -1,109 +1,153 @@
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import { RULE_LABELS, SEVERITY_ICONS, formatDate } from "./constants";
 
-export default function ActionCenter({ account, status }) {
-  const exceptions = useQuery(api.queries.listExceptions, { account, status });
-  const resolveException = useMutation(api.queries.resolveException);
+export default function ActionCenter({ account, status, ruleFilter }) {
+  const exceptions = useQuery(api.queries.listExceptions, {
+    account: account || "ALL",
+    status: status || "OPEN",
+  });
+  const resolve = useMutation(api.queries.resolveException);
 
-  const handleAction = async (id, action) => {
-    await resolveException({ exceptionId: id, action, resolvedBy: "QC Team" });
+  if (!exceptions) return <div className="loading-state">Loading actions...</div>;
+
+  // Apply rule filter if a metric card was clicked
+  let filtered = exceptions;
+  if (ruleFilter && ruleFilter.length > 0) {
+    filtered = exceptions.filter((e) =>
+      ruleFilter.some((r) => e.ruleCode.startsWith(r))
+    );
+  }
+
+  if (filtered.length === 0) {
+    return (
+      <div className="table-card">
+        <div className="table-header">
+          <h3>Needs Action</h3>
+        </div>
+        <div className="empty-state">
+          <div className="icon">✓</div>
+          <h4>All Clear</h4>
+          <p>
+            {ruleFilter
+              ? "No violations found for the selected metric."
+              : "No open exceptions for this filter."}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Group by account for the "Overview" count
+  const byAccount = {};
+  for (const e of filtered) {
+    const acc = e.account || "Unassigned";
+    if (!byAccount[acc]) byAccount[acc] = { total: 0, high: 0 };
+    byAccount[acc].total++;
+    if (e.severity === "HIGH") byAccount[acc].high++;
+  }
+
+  const severityBadge = (severity) => {
+    const cls = severity === "HIGH" ? "badge-high" : severity === "MEDIUM" ? "badge-medium" : "badge-low";
+    return <span className={`badge ${cls}`}>{severity}</span>;
   };
 
-  if (exceptions === undefined) {
-    return (
-      <div className="loading-center">
-        <div className="spinner" />
-        ANALYZING SECTOR DATA...
-      </div>
-    );
-  }
-
-  if (exceptions.length === 0) {
-    return (
-      <div className="empty-state animate-in">
-        <div className="empty-state-icon" style={{ opacity: 0.2 }}>[0]</div>
-        <div className="empty-state-title">ALL SYSTEMS STABLE</div>
-        <div className="empty-state-sub">
-          {account && account !== "ALL"
-            ? `Sector "${account}" reports no anomalies.`
-            : "No workforce anomalies detected in current cycle."}
-        </div>
-      </div>
-    );
-  }
-
-  // Group by account
-  const grouped = {};
-  for (const ex of exceptions) {
-    const key = ex.account || "Unassigned";
-    if (!grouped[key]) grouped[key] = [];
-    grouped[key].push(ex);
-  }
-
   return (
-    <div className="exceptions-list animate-in">
-      {Object.entries(grouped).map(([grpAccount, items]) => (
-        <div key={grpAccount}>
-          <div className="group-header">
-            <span className="group-header-name">SECTOR // {grpAccount.toUpperCase()}</span>
-            <span className="group-header-count">{items.length} ANOMALIES</span>
-          </div>
-          {items.map((ex) => {
-            const isResolved =
-              ex.status === "RESOLVED" || ex.status === "ACKNOWLEDGED";
-            const label = RULE_LABELS[ex.ruleCode] ?? ex.ruleCode;
-            
-            return (
-              <div
-                key={ex._id}
-                className={`exception-card ${ex.severity}${isResolved ? " resolved" : ""}`}
-              >
-                <div style={{ display: "flex", flexDirection: "column", gap: "4px", alignItems: "flex-start", flexShrink: 0 }}>
-                  <span className={`severity-pill ${isResolved ? ex.status : ex.severity}`}>
-                    {isResolved
-                      ? ex.status === "RESOLVED" ? "SYS_OK" : "SYS_ACK"
-                      : `[!] ${ex.severity}`}
-                  </span>
-                </div>
-
-                <div className="exception-body">
-                  <div className="exception-employee">{ex.employeeName}</div>
-                  <div className="exception-meta">
-                    <span className="exception-meta-item mono">
-                      PERIOD: {ex.date}
-                    </span>
-                    <span className="exception-rule">{label}</span>
-                  </div>
-                  <div className="exception-description">{ex.description}</div>
-                  {ex.rawValue && (
-                    <div className="exception-raw">HEX_VAL: {ex.rawValue}</div>
-                  )}
-                </div>
-
-                {!isResolved && (
-                  <div className="exception-actions">
-                    <button
-                      id={`resolve-${ex._id}`}
-                      className="btn btn-resolve btn-sm"
-                      onClick={() => handleAction(ex._id, "RESOLVED")}
-                    >
-                      FIX_SYS
-                    </button>
-                    <button
-                      id={`ack-${ex._id}`}
-                      className="btn btn-ack btn-sm"
-                      onClick={() => handleAction(ex._id, "ACKNOWLEDGED")}
-                    >
-                      ACK_ALRT
-                    </button>
-                  </div>
-                )}
-              </div>
-            );
-          })}
+    <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+      {/* Overview by Account */}
+      <div className="overview-card">
+        <h3>Overview by Account</h3>
+        <div className="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Account</th>
+                <th style={{ textAlign: "right" }}>Total</th>
+                <th style={{ textAlign: "right" }}>High</th>
+              </tr>
+            </thead>
+            <tbody>
+              {Object.entries(byAccount)
+                .sort((a, b) => b[1].total - a[1].total)
+                .map(([acc, counts]) => (
+                  <tr key={acc}>
+                    <td style={{ color: "var(--accent)", fontWeight: 500 }}>{acc}</td>
+                    <td style={{ textAlign: "right" }}>{counts.total}</td>
+                    <td style={{ textAlign: "right", color: counts.high > 0 ? "var(--red)" : "var(--text-dim)" }}>
+                      {counts.high}
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
         </div>
-      ))}
+      </div>
+
+      {/* Detailed Table */}
+      <div className="table-card">
+        <div className="table-header">
+          <h3>Needs Action — {filtered.length} item{filtered.length !== 1 ? "s" : ""}</h3>
+        </div>
+        <div className="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Employee</th>
+                <th>Account</th>
+                <th>Date</th>
+                <th>Rule</th>
+                <th>Severity</th>
+                <th>Description</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((e) => (
+                <tr key={e._id}>
+                  <td style={{ fontWeight: 500, color: "var(--text-primary)" }}>
+                    {e.employeeName}
+                    <div style={{ fontSize: "0.68rem", color: "var(--text-dim)" }}>{e.employeeId}</div>
+                  </td>
+                  <td>{e.account || "—"}</td>
+                  <td>{e.date}</td>
+                  <td style={{ fontSize: "0.7rem", fontFamily: "monospace", color: "var(--text-dim)" }}>
+                    {e.ruleCode}
+                  </td>
+                  <td>{severityBadge(e.severity)}</td>
+                  <td style={{ maxWidth: "280px", whiteSpace: "normal", color: "var(--text-secondary)" }}>
+                    {e.description}
+                    {e.rawValue && (
+                      <span style={{ display: "block", fontSize: "0.68rem", color: "var(--text-dim)", marginTop: "2px" }}>
+                        Value: {e.rawValue}
+                      </span>
+                    )}
+                  </td>
+                  <td>
+                    {e.status === "OPEN" && (
+                      <div style={{ display: "flex", gap: "4px" }}>
+                        <button
+                          className="btn btn-sm"
+                          onClick={() => resolve({ exceptionId: e._id, action: "ACKNOWLEDGED" })}
+                        >
+                          Ack
+                        </button>
+                        <button
+                          className="btn btn-sm btn-primary"
+                          onClick={() => resolve({ exceptionId: e._id, action: "RESOLVED" })}
+                        >
+                          Resolve
+                        </button>
+                      </div>
+                    )}
+                    {e.status !== "OPEN" && (
+                      <span className={`badge badge-${e.status.toLowerCase()}`}>{e.status}</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }

@@ -236,3 +236,28 @@ export const ingestSchedules = httpAction(async (ctx, request) => {
     });
   }
 });
+
+// ─── Ingest Sync Status ───────────────────────────────────────────────────────
+export const ingestSyncStatus = httpAction(async (ctx, request) => {
+  if (request.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers: corsHeaders() });
+  }
+  try {
+    const { status, lastSync, nextSync, error } = await request.json();
+    await ctx.runMutation(internal.mutations.updateSyncStatus, {
+      status,
+      lastSync,
+      nextSync,
+      error,
+    });
+    return new Response(JSON.stringify({ ok: true }), {
+      status: 200,
+      headers: { "Content-Type": "application/json", ...corsHeaders() },
+    });
+  } catch (err) {
+    return new Response(JSON.stringify({ error: String(err) }), {
+      status: 500,
+      headers: { "Content-Type": "application/json", ...corsHeaders() },
+    });
+  }
+});

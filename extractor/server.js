@@ -3,6 +3,7 @@ const express = require('express');
 const path = require('path');
 const Zoho = require('./zoho');
 const Poster = require('./poster');
+const cron = require('node-cron');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -14,6 +15,66 @@ const poster = new Poster(process.env.CONVEX_SITE_URL || 'http://localhost:3211'
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+
+// ── Automated Sync Logic ─────────────────────────────────────────────────────
+
+async function syncAllSectors() {
+  console.log(`\n[${new Date().toISOString()}] 🚨 INITIATING DAILY SYSTEM SYNC...`);
+  
+  try {
+    if (!zoho.isAuthenticated()) {
+      console.log("[SKIP] System not authenticated. Skipping automated sync.");
+      return;
+    }
+
+    // Broadcast SYNCING status
+    await poster.pushToConvex('sync-status', { status: 'SYNCING' });
+
+    const reports = ['time-logs', 'break-logs', 'leaves', 'ot-requests', 'schedules'];
+    let count = 0;
+
+    for (const report of reports) {
+      console.log(`[SYNC] Pulling ${report}...`);
+      const records = await zoho.fetchReport(report);
+      await poster.pushToConvex(report, records);
+      count += records.length;
+      console.log(`[OK] Pushed ${records.length} records.`);
+    }
+
+    // Calculate next sync (Midnight Tomorrow NYC)
+    const now = new Date();
+    const next = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+    next.setHours(24, 0, 0, 0); 
+    const nextSyncMs = next.getTime();
+
+    await poster.pushToConvex('sync-status', {
+      status: 'IDLE',
+      lastSync: Date.now(),
+      nextSync: nextSyncMs
+    });
+
+    console.log(`\n[SUCCESS] Daily Sync Complete. Total Records: ${count}`);
+    console.log(`[NEXT SYNC] ${next.toLocaleString('en-US', { timeZone: 'America/New_York' })} EST\n`);
+
+  } catch (err) {
+    console.error(`[CRITICAL] Automated Sync Failed:`, err.message);
+    await poster.pushToConvex('sync-status', { 
+      status: 'FAILED', 
+      error: err.message,
+      lastSync: Date.now()
+    });
+  }
+}
+
+// Schedule: Daily at Midnight America/New_York
+cron.schedule('0 0 * * *', () => {
+  syncAllSectors();
+}, {
+  scheduled: true,
+  timezone: "America/New_York"
+});
+
+console.log('📅 Automation: Daily Sector Sync registered for 12 AM EST.');
 
 // ── Auth Routes ──
 app.get('/status', (req, res) => {
@@ -33,9 +94,11 @@ app.get('/callback', async (req, res) => {
     await zoho.authorize(code);
     res.send(`
       <h2>Authorization Successful!</h2>
-      <p>Tokens saved locally. You can close this tab and return to the Extractor Dashboard.</p>
+      <p>Tokens saved locally. Auto-sync is now ACTIVE.</p>
       <script>setTimeout(() => window.location.href="/", 2000);</script>
     `);
+    // Run an initial sync on first auth
+    syncAllSectors();
   } catch (err) {
     res.send(`Authorization failed: ${err.message}`);
   }
@@ -47,25 +110,27 @@ app.post('/extract/:type', async (req, res) => {
   try {
     if(!zoho.isAuthenticated()) throw new Error('Not authenticated with Zoho');
     
-    // 1. Pull from Zoho
-    console.log(`[Pulling] Zoho Report: ${type}...`);
+    // Use the consolidated sync logic even for manual triggers
     const records = await zoho.fetchReport(type);
-    console.log(`[Done] Fetched ${records.length} records for ${type}.`);
+    await poster.pushToConvex(type, records);
     
-    // 2. Push to Convex
-    console.log(`[Pushing] To Convex /ingest/${type}...`);
-    const pushResult = await poster.pushToConvex(type, records);
-    console.log(`[Success] Pushed to Convex.`);
-    
-    res.json({ 
-      success: true, 
-      message: `Pushed ${records.length} records.`, 
-      records: records.length 
+    // Update last sync time since we just did one
+    await poster.pushToConvex('sync-status', { 
+      status: 'IDLE', 
+      lastSync: Date.now() 
     });
+
+    res.json({ success: true, count: records.length });
   } catch (err) {
     console.error(`[Error] /extract/${type}:`, err.message);
     res.status(500).json({ error: err.message });
   }
+});
+
+// Trigger a manual sync endpoint for all
+app.post('/extract-all', async (req, res) => {
+  syncAllSectors();
+  res.json({ success: true, message: "Global sync initiated." });
 });
 
 // Start Server

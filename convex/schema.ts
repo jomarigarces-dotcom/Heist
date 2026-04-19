@@ -104,4 +104,12 @@ export default defineSchema({
     .index("by_employee", ["employeeId"])
     .index("by_status", ["status"])
     .index("by_batch", ["batchId"]),
+
+  // Sync Metadata: Tracks automation heartbeat
+  syncStatus: defineTable({
+    lastSync: v.optional(v.number()), // ms timestamp
+    nextSync: v.optional(v.number()), // ms timestamp
+    status: v.string(), // "IDLE" | "SYNCING" | "FAILED"
+    error: v.optional(v.string()),
+  }),
 });

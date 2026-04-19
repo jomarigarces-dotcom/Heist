@@ -91,28 +91,52 @@ export const listLeaves = query({
 
 // ─── Stats for dashboard summary cards ───────────────────────────────────────
 export const getStats = query({
-  args: {},
-  handler: async (ctx) => {
-    const exceptions = await ctx.db.query("exceptions").collect();
+  args: {
+    account: v.optional(v.string()),
+  },
+  handler: async (ctx, { account }) => {
+    let exceptions = await ctx.db.query("exceptions").collect();
     const timeLogs = await ctx.db.query("timeLogs").collect();
     const breakLogs = await ctx.db.query("breakLogs").collect();
 
-    const open = exceptions.filter((e) => e.status === "OPEN").length;
-    const high = exceptions.filter(
-      (e) => e.severity === "HIGH" && e.status === "OPEN"
-    ).length;
-    const medium = exceptions.filter(
-      (e) => e.severity === "MEDIUM" && e.status === "OPEN"
-    ).length;
-    const resolved = exceptions.filter((e) => e.status === "RESOLVED").length;
+    // Filter by account if specified
+    if (account && account !== "ALL") {
+      exceptions = exceptions.filter((e) => e.account === account);
+    }
+
+    const open = exceptions.filter((e) => e.status === "OPEN");
+
+    // Helper to count open exceptions by ruleCode prefix
+    const countRule = (...codes: string[]) =>
+      open.filter((e) => codes.some((c) => e.ruleCode.startsWith(c))).length;
 
     return {
-      totalExceptions: open,
-      highSeverity: high,
-      mediumSeverity: medium,
-      resolved,
+      // Summary
+      totalOpen: open.length,
+      resolved: exceptions.filter((e) => e.status === "RESOLVED").length,
       totalTimeLogs: timeLogs.length,
       totalBreakLogs: breakLogs.length,
+
+      // Attendance Row
+      lateCount: countRule("STEP_3_2", "STEP_3_3"),
+      undertimeCount: countRule("STEP_3_4"),
+      missingLogout: countRule("STEP_3_1_MISSING_LOGOUT"),
+      scheduleNot40: countRule("STEP_3_9"),
+      missingStatus: countRule("STEP_3_1_MISSING_STATUS"),
+      missingAccount: countRule("STEP_3_1_MISSING_ACCOUNT"),
+      errorCount: countRule("STEP_3_1_ERROR_COUNT"),
+
+      // Breaks Row
+      overbreakCount: countRule("STEP_4_3"),
+      openBreaks: countRule("STEP_4_1"),
+      clinicOvertime: countRule("STEP_4_2"),
+      clinicLunchOverlap: countRule("STEP_4_5"),
+
+      // Inquiries Row
+      pendingOT: countRule("STEP_2_1_PENDING_OT"),
+      pendingLeave: countRule("STEP_2_1_PENDING_LEAVE"),
+      halfDayLeave: countRule("STEP_3_5"),
+      leaveButPresent: countRule("STEP_3_6"),
     };
   },
 });
@@ -130,5 +154,13 @@ export const resolveException = mutation({
       resolvedBy: resolvedBy ?? "QC Team",
       resolvedAt: Date.now(),
     });
+  },
+});
+
+// ─── Get Sync Status ─────────────────────────────────────────────────────────
+export const getSyncStatus = query({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db.query("syncStatus").first();
   },
 });

@@ -4,8 +4,16 @@ import { ingestBreakLogs } from "./ingest";
 import { ingestLeaves } from "./ingest";
 import { ingestOTRequests } from "./ingest";
 import { ingestSchedules } from "./ingest";
+import { ingestSyncStatus } from "./ingest";
 
 const http = httpRouter();
+
+// ─── Sync Status ──────────────────────────────────────────────────────────────
+http.route({
+  path: "/ingest/sync-status",
+  method: "POST",
+  handler: ingestSyncStatus,
+});
 
 // ─── Time Logs ────────────────────────────────────────────────────────────────
 http.route({

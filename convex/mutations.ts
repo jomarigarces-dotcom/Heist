@@ -459,3 +459,21 @@ export const resolveException = internalMutation({
     });
   },
 });
+
+// ─── Update Sync Status ─────────────────────────────────────────────────────
+export const updateSyncStatus = internalMutation({
+  args: {
+    status: v.string(),
+    lastSync: v.optional(v.number()),
+    nextSync: v.optional(v.number()),
+    error: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db.query("syncStatus").first();
+    if (existing) {
+      await ctx.db.patch(existing._id, args);
+    } else {
+      await ctx.db.insert("syncStatus", args);
+    }
+  },
+});
