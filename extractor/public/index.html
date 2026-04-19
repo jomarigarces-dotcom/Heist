@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Heist Extractor</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=DM+Mono:wght@400;500&display=swap');
+    
+    :root {
+      --bg-primary: #f1f5f9;
+      --bg-card: #ffffff;
+      --nav-bg: #4355f1;
+      --text-main: #1f2937;
+      --text-muted: #64748b;
+      --amber: #f59e0b;
+      --border: #e2e8f0;
+      --green: #10b981;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-main);
+      margin: 0;
+      padding-top: 80px;
+    }
+    
+    body::before {
+      content: ''; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="%23cbd5e1" stroke-width="1" opacity="0.4"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/></svg>');
+      z-index: -1; pointer-events: none;
+    }
+
+    header {
+      position: fixed; top: 0; left: 0; width: 100%;
+      background: var(--nav-bg); height: 60px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 40px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); box-sizing: border-box;
+      z-index: 100;
+    }
+    header h2 { color: white; margin: 0; font-weight: 900; letter-spacing: -0.5px; }
+
+    .container {
+      max-width: 900px; margin: 0 auto; padding: 40px;
+    }
+
+    .header-box {
+      border: 3px solid var(--amber);
+      border-radius: 24px;
+      padding: 30px 40px;
+      background: white;
+      text-align: center;
+      margin-bottom: 30px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+    }
+    .header-box h1 { font-size: 2.2rem; font-weight: 900; margin: 0 0 10px 0; text-transform: uppercase; }
+    .header-box p { color: var(--text-muted); font-weight: 700; margin: 0; }
+
+    .auth-banner {
+      background: #fef3c7; border: 2px solid #fde68a;
+      border-radius: 16px; padding: 20px;
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 25px;
+    }
+    .auth-banner p { margin: 0; font-weight: 700; color: #b45309; }
+    
+    .btn {
+      padding: 12px 24px; border-radius: 12px; font-weight: 900;
+      text-transform: uppercase; cursor: pointer; border: none; font-size: 0.85rem;
+      transition: all 0.2s;
+    }
+    .btn-auth { background: var(--amber); color: #78350f; }
+    .btn-auth:hover { background: #fbbf24; transform: translateY(-2px); }
+    
+    .btn-action { background: var(--nav-bg); color: white; width: 100%; margin-top: 10px; }
+    .btn-action:hover { background: #3730a3; transform: translateY(-2px); box-shadow: 0 8px 15px rgba(67, 85, 241, 0.2); }
+    .btn-action:disabled { background: #cbd5e1; cursor: not-allowed; transform: none; box-shadow: none; }
+
+    .grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px;
+    }
+    .card {
+      background: white; border-radius: 20px; padding: 25px;
+      border: 1px solid var(--border); box-shadow: 0 5px 15px rgba(0,0,0,0.02);
+      text-align: center;
+    }
+    .card h3 { font-weight: 900; margin: 0 0 5px 0; font-size: 1.1rem; }
+    .card p { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; margin: 0 0 15px 0; }
+
+    /* Terminal Console */
+    .logs-box {
+      background: #0f172a; border-radius: 20px; padding: 20px;
+      color: #38bdf8; font-family: 'DM Mono', monospace; font-size: 0.85rem;
+      height: 250px; overflow-y: auto; text-align: left;
+      box-shadow: 0 15px 30px rgba(0,0,0,0.1) inset;
+    }
+    .log-line { margin: 5px 0; display: flex; gap: 10px; }
+    .log-time { color: #64748b; font-size: 0.75rem; }
+    .log-msg.success { color: var(--green); }
+    .log-msg.error { color: #ef4444; }
+
+  </style>
+</head>
+<body>
+
+  <header>
+    <h2>HEIST / EXTRACTOR</h2>
+    <div style="font-weight: 800; font-size: 0.8rem; color: white;">NODE.JS EDITION</div>
+  </header>
+
+  <div class="container">
+    
+    <div class="header-box">
+      <h1>Data Pipeline Control</h1>
+      <p>Manually pull Zoho reports and push immediately to the Heist Convex Backend.</p>
+    </div>
+
+    <!-- Auth Status -->
+    <div class="auth-banner" id="authBox">
+      <p id="authState">Checking Zoho authentication status...</p>
+      <button class="btn btn-auth" onclick="window.location.href='/auth'" id="authBtn" style="display:none;">Connect to Zoho</button>
+    </div>
+
+    <!-- Extraction Actions -->
+    <div class="grid">
+      <div class="card">
+        <h3>Time Logs</h3>
+        <p>Login/Logout records</p>
+        <button class="btn btn-action extract-btn" data-type="time-logs">Pull & Push</button>
+      </div>
+      <div class="card">
+        <h3>Break Logs</h3>
+        <p>Short break & clinic records</p>
+        <button class="btn btn-action extract-btn" data-type="break-logs">Pull & Push</button>
+      </div>
+      <div class="card">
+        <h3>Leaves</h3>
+        <p>Approved & pending leaves</p>
+        <button class="btn btn-action extract-btn" data-type="leaves">Pull & Push</button>
+      </div>
+      <div class="card">
+        <h3>OT Requests</h3>
+        <p>Overtime approvals</p>
+        <button class="btn btn-action extract-btn" data-type="ot-requests">Pull & Push</button>
+      </div>
+      <div class="card">
+        <h3>Schedules</h3>
+        <p>Weekly adherence</p>
+        <button class="btn btn-action extract-btn" data-type="schedules">Pull & Push</button>
+      </div>
+      <div class="card" style="border-color: var(--amber); background: #fefce8;">
+        <h3>Run Pipeline</h3>
+        <p>Execute all 5 reports at once</p>
+        <button class="btn btn-action" id="runAllBtn" style="background: var(--amber); color: #78350f;">START BATCH</button>
+      </div>
+    </div>
+
+    <!-- Live Logs -->
+    <h3 style="font-weight: 900; font-size: 0.9rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px;">Execution Logs</h3>
+    <div class="logs-box" id="logger"></div>
+
+  </div>
+
+  <script>
+    const logger = document.getElementById('logger');
+    
+    function log(msg, type='info') {
+      const line = document.createElement('div');
+      line.className = 'log-line';
+      const time = new Date().toLocaleTimeString();
+      let colorClass = type === 'success' ? 'success' : type === 'error' ? 'error' : '';
+      line.innerHTML = `<span class="log-time">[${time}]</span> <span class="log-msg ${colorClass}">${msg}</span>`;
+      logger.appendChild(line);
+      logger.scrollTop = logger.scrollHeight;
+    }
+
+    // Check Auth
+    fetch('/status')
+      .then(r => r.json())
+      .then(data => {
+        const authBox = document.getElementById('authBox');
+        const authState = document.getElementById('authState');
+        const authBtn = document.getElementById('authBtn');
+        if(data.authenticated) {
+          authBox.style.background = '#ecfdf5';
+          authBox.style.borderColor = '#10b981';
+          authState.innerHTML = '✅ Authenticated with Zoho API';
+          authState.style.color = '#047857';
+          log("System ready. Linked to Convex backend.", "success");
+        } else {
+          authState.innerHTML = '⚠️ Zoho Authentication Required';
+          authBtn.style.display = 'block';
+          document.querySelectorAll('.btn-action').forEach(b => b.disabled = true);
+          log("Awaiting OAuth connection...", "error");
+        }
+      });
+
+    // Individual Extract Button Handlers
+    document.querySelectorAll('.extract-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const type = e.target.getAttribute('data-type');
+        triggerExtraction(type);
+      });
+    });
+    
+    // Batch All Routine
+    document.getElementById('runAllBtn').addEventListener('click', async () => {
+      const tasks = ['time-logs', 'break-logs', 'leaves', 'ot-requests', 'schedules'];
+      log("▶ Starting full pipeline batch processing...");
+      for(const t of tasks) {
+        await triggerExtraction(t);
+      }
+      log("✅ Full pipeline complete.", "success");
+    });
+
+    async function triggerExtraction(type) {
+      log(`Triggering extraction: <b>${type}</b>...`);
+      try {
+        const res = await fetch(`/extract/${type}`, { method: 'POST' });
+        const data = await res.json();
+        if(res.ok) {
+          log(`✓ ${type} success: ${data.message}`, "success");
+        } else {
+          log(`✗ ${type} failed: ${data.error}`, "error");
+        }
+      } catch (err) {
+        log(`✗ Unexpected error for ${type}: ${err.message}`, "error");
+      }
+    }
+  </script>
+
+</body>
+</html>
