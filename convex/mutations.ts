@@ -485,12 +485,13 @@ export const clearAllData = internalMutation({
     const tables = ["timeLogs", "breakLogs", "leaves", "otRequests", "schedules", "exceptions"];
     let total = 0;
     for (const table of tables) {
-      const rows = await ctx.db.query(table as any).collect();
+      // Use take(1000) to prevent hitting Convex's 8192 item transaction limit
+      const rows = await ctx.db.query(table as any).take(1000);
       for (const row of rows) {
         await ctx.db.delete(row._id);
       }
       total += rows.length;
     }
-    return { deleted: total };
+    return { deleted: total, hasMore: total > 0 };
   },
 });

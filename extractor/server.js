@@ -135,8 +135,14 @@ app.post('/extract-all', async (req, res) => {
 // Trigger a database wipe
 app.post('/clear-all', async (req, res) => {
   try {
-    await poster.postDirect('/clear-all', {});
-    res.json({ success: true, message: "Convex database wiped successfully." });
+    let hasMore = true;
+    let totalDeleted = 0;
+    while (hasMore) {
+      const result = await poster.postDirect('/clear-all', {});
+      hasMore = result.hasMore;
+      totalDeleted += result.deleted || 0;
+    }
+    res.json({ success: true, message: `Convex database wiped successfully (${totalDeleted} records).` });
   } catch (err) {
     console.error(`[CRITICAL] DB Wipe Failed:`, err.message);
     res.status(500).json({ error: err.message });

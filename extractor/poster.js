@@ -8,9 +8,10 @@ class Poster {
   // ── Direct POST (for non-report payloads like sync-status) ──
   async postDirect(path, payload) {
     const url = `${this.convexUrl}${path}`;
-    await axios.post(url, payload, {
+    const response = await axios.post(url, payload, {
       headers: { 'Content-Type': 'application/json' }
     });
+    return response.data;
   }
 
   async pushToConvex(reportType, data) {

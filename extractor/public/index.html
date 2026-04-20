@@ -246,7 +246,8 @@
         const res = await fetch(`/extract/${type}`, { method: 'POST' });
         const data = await res.json();
         if(res.ok) {
-          log(`✓ ${type} success: ${data.message}`, "success");
+          const msg = data.count !== undefined ? `${data.count} records processed` : (data.message || 'Done');
+          log(`✓ ${type} success: ${msg}`, "success");
         } else {
           log(`✗ ${type} failed: ${data.error}`, "error");
         }
