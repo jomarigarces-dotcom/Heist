@@ -30,6 +30,16 @@ async function syncAllSectors() {
     // Broadcast SYNCING status
     await poster.pushToConvex('sync-status', { status: 'SYNCING' });
 
+    console.log(`[SYNC] Wiping old database records...`);
+    let hasMore = true;
+    let wipeCount = 0;
+    while (hasMore) {
+      const result = await poster.postDirect('/clear-all', {});
+      hasMore = result.hasMore;
+      wipeCount += result.deleted || 0;
+    }
+    console.log(`[OK] Wiped ${wipeCount} old records.`);
+
     const reports = ['time-logs', 'break-logs', 'leaves', 'ot-requests', 'schedules'];
     let count = 0;
 

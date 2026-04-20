@@ -211,8 +211,24 @@
     
     // Batch All Routine
     document.getElementById('runAllBtn').addEventListener('click', async () => {
-      const tasks = ['time-logs', 'break-logs', 'leaves', 'ot-requests', 'schedules'];
       log("▶ Starting full pipeline batch processing...");
+      
+      log("▶ Wiping old data first...");
+      try {
+        const wipeRes = await fetch(`/clear-all`, { method: 'POST' });
+        const wipeData = await wipeRes.json();
+        if(wipeRes.ok) {
+          log(`✓ Database wiped successfully.`, "success");
+        } else {
+          log(`✗ Wipe failed: ${wipeData.error}`, "error");
+          return; // Stop pipeline if wipe fails
+        }
+      } catch (err) {
+        log(`✗ Unexpected error during wipe: ${err.message}`, "error");
+        return; // Stop pipeline if wipe fails
+      }
+
+      const tasks = ['time-logs', 'break-logs', 'leaves', 'ot-requests', 'schedules'];
       for(const t of tasks) {
         await triggerExtraction(t);
       }
