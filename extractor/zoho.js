@@ -109,11 +109,11 @@ class Zoho {
       const end = new Date(new Date(start).setDate(start.getDate() + 13));
       criteria = `(S_Date >= "${formatter(start)}" && S_Date <= "${formatter(end)}")`;
     } else if (reportType === 'leaves') {
-      const twoMonthsAgo = new Date(now); twoMonthsAgo.setMonth(now.getMonth() - 2);
-      criteria = `(A_Date >= "${formatter(twoMonthsAgo)}")`;
+      // Fetch full table. Zoho string-date `>=` operator drops recent records due to alphabetical sorting.
+      criteria = '';
     } else if (reportType === 'ot-requests') {
-      const twoMonthsAgo = new Date(now); twoMonthsAgo.setMonth(now.getMonth() - 2);
-      criteria = `(O_Date >= "${formatter(twoMonthsAgo)}")`;
+      // Fetch full table. Zoho string-date `>=` operator drops recent records due to alphabetical sorting.
+      criteria = '';
     }
 
     const token = await this.getValidToken();
@@ -134,6 +134,10 @@ class Zoho {
         
         if(records.length < 200) break;
         startIndex += 200;
+        
+        // Add a 250ms delay to prevent Zoho Creator API from violently rate 
+        // limiting us or forcefully dropping the connection during massive 130+ page requests.
+        await new Promise(r => setTimeout(r, 250));
       } catch (err) {
         if(err.response?.data?.code === 3100) break; // "No Data Available" is 3100 in Zoho
         throw new Error(`Zoho API Error: ${err.message}`);
