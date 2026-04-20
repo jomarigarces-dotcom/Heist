@@ -144,8 +144,9 @@ app.post('/clear-all', async (req, res) => {
     }
     res.json({ success: true, message: `Convex database wiped successfully (${totalDeleted} records).` });
   } catch (err) {
-    console.error(`[CRITICAL] DB Wipe Failed:`, err.message);
-    res.status(500).json({ error: err.message });
+    const serverError = err.response?.data?.error || err.message;
+    console.error(`[CRITICAL] DB Wipe Failed:`, serverError);
+    res.status(500).json({ error: serverError });
   }
 });
 

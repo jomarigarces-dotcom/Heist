@@ -485,8 +485,9 @@ export const clearAllData = internalMutation({
     const tables = ["timeLogs", "breakLogs", "leaves", "otRequests", "schedules", "exceptions"];
     let total = 0;
     for (const table of tables) {
-      // Use take(1000) to prevent hitting Convex's 8192 item transaction limit
-      const rows = await ctx.db.query(table as any).take(1000);
+      // Use take(200) to prevent hitting Convex's 8192 item write limit 
+      // (deleting 1 document also updates ~4 indixes, so 200 * 6 * 5 = 6000 writes)
+      const rows = await ctx.db.query(table as any).take(200);
       for (const row of rows) {
         await ctx.db.delete(row._id);
       }
