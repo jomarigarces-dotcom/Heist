@@ -154,6 +154,11 @@
         <p>Execute all 5 reports at once</p>
         <button class="btn btn-action" id="runAllBtn" style="background: var(--amber); color: #78350f;">START BATCH</button>
       </div>
+      <div class="card" style="border-color: #ef4444; background: #fef2f2;">
+        <h3>Clear Database</h3>
+        <p>Wipe all Convex data</p>
+        <button class="btn btn-action" id="clearAllBtn" style="background: #ef4444; color: white;">RESET ALL</button>
+      </div>
     </div>
 
     <!-- Live Logs -->
@@ -213,6 +218,27 @@
       }
       log("✅ Full pipeline complete.", "success");
     });
+
+    // Clear Database Routine
+    const clearBtn = document.getElementById('clearAllBtn');
+    if (clearBtn) {
+      clearBtn.addEventListener('click', async () => {
+        if (!confirm("Are you absolutely sure you want to WIPE all existing data in Convex? This cannot be undone.")) return;
+        
+        log("▶ Attempting to clear Convex database...");
+        try {
+          const res = await fetch(`/clear-all`, { method: 'POST' });
+          const data = await res.json();
+          if(res.ok) {
+            log(`✓ Database wiped successfully.`, "success");
+          } else {
+            log(`✗ Wipe failed: ${data.error}`, "error");
+          }
+        } catch (err) {
+          log(`✗ Unexpected error during wipe: ${err.message}`, "error");
+        }
+      });
+    }
 
     async function triggerExtraction(type) {
       log(`Triggering extraction: <b>${type}</b>...`);

@@ -132,6 +132,17 @@ app.post('/extract-all', async (req, res) => {
   res.json({ success: true, message: "Global sync initiated." });
 });
 
+// Trigger a database wipe
+app.post('/clear-all', async (req, res) => {
+  try {
+    await poster.postDirect('/clear-all', {});
+    res.json({ success: true, message: "Convex database wiped successfully." });
+  } catch (err) {
+    console.error(`[CRITICAL] DB Wipe Failed:`, err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Start Server
 app.listen(PORT, () => {
   console.log(`🚀 Heist Extractor Control Panel running on http://localhost:${PORT}`);

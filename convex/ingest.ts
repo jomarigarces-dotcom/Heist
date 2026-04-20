@@ -261,3 +261,22 @@ export const ingestSyncStatus = httpAction(async (ctx, request) => {
     });
   }
 });
+
+// ─── Clear All Data ───────────────────────────────────────────────────────────
+export const clearAllData = httpAction(async (ctx, request) => {
+  if (request.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers: corsHeaders() });
+  }
+  try {
+    const result = await ctx.runMutation(internal.mutations.clearAllData, {});
+    return new Response(JSON.stringify({ ok: true, ...result }), {
+      status: 200,
+      headers: { "Content-Type": "application/json", ...corsHeaders() },
+    });
+  } catch (err) {
+    return new Response(JSON.stringify({ error: String(err) }), {
+      status: 500,
+      headers: { "Content-Type": "application/json", ...corsHeaders() },
+    });
+  }
+});

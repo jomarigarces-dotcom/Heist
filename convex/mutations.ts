@@ -477,3 +477,20 @@ export const updateSyncStatus = internalMutation({
     }
   },
 });
+
+// ─── Clear All Data Tables ──────────────────────────────────────────────────
+export const clearAllData = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const tables = ["timeLogs", "breakLogs", "leaves", "otRequests", "schedules", "exceptions"];
+    let total = 0;
+    for (const table of tables) {
+      const rows = await ctx.db.query(table as any).collect();
+      for (const row of rows) {
+        await ctx.db.delete(row._id);
+      }
+      total += rows.length;
+    }
+    return { deleted: total };
+  },
+});

@@ -5,8 +5,16 @@ import { ingestLeaves } from "./ingest";
 import { ingestOTRequests } from "./ingest";
 import { ingestSchedules } from "./ingest";
 import { ingestSyncStatus } from "./ingest";
+import { clearAllData } from "./ingest";
 
 const http = httpRouter();
+
+// ─── Clear All Data ───────────────────────────────────────────────────────────
+http.route({
+  path: "/clear-all",
+  method: "POST",
+  handler: clearAllData,
+});
 
 // ─── Sync Status ──────────────────────────────────────────────────────────────
 http.route({
